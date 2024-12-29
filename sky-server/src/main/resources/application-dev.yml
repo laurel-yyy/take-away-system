@@ -12,3 +12,12 @@ sky:
     endpoint: oss-us-west-1.aliyuncs.com
     access-key-secret: auKMygTZ1QmnxiX4FVThtrus6LkXNS
     access-key-id: LTAI5t7YUNYjkFT7pTn9gZt3
+
+  redis:
+    host: localhost
+    port: 6379
+    database: 10
+
+  wechat:
+    appid: wx6d881d20e996cdca
+    secret: b08f2a0e44473c50acf73460204c5013
