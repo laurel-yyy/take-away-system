@@ -11,9 +11,11 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/admin/dish")
@@ -25,13 +27,22 @@ public class DishController {
     @Autowired
     private DishService dishService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+
     @PostMapping
     @ApiOperation("Add new dish")
     public Result save(@RequestBody DishDTO dishDTO){
         log.info("add new dish {}", dishDTO);
         dishService.saveWithFlavor(dishDTO);
+
+        String key = "dish_" + dishDTO.getCategoryId();
+        cleanCache(key);
+
         return Result.success();
     }
+
 
     @GetMapping("/page")
     @ApiOperation("dish page query")
@@ -42,13 +53,17 @@ public class DishController {
         return Result.success(pageResult);
     }
 
+
     @DeleteMapping
     @ApiOperation("Delete dish")
     public Result delete(@RequestParam List<Long> ids){
         log.info("delete dish {}", ids);
         dishService.deleteBatch(ids);
+
+        cleanCache("*dish_*");
         return Result.success();
     }
+
 
     @GetMapping("/{id}")
     @ApiOperation("Get Dish by Id")
@@ -58,19 +73,41 @@ public class DishController {
         return Result.success(dishVO);
     }
 
+
     @PutMapping
     @ApiOperation("Update dish info")
     public Result update(@RequestBody DishDTO dishDTO){
         log.info("update dish {}", dishDTO);
         dishService.updateWithFlavor(dishDTO);
+
+        cleanCache("*dish_*");
+
         return Result.success();
 
     }
+
+
+    @PostMapping("/status/{status}")
+    @ApiOperation("Start/Stop dish")
+    public Result startOrStop(@PathVariable Integer status, Long id){
+        dishService.startOrStop(status, id);
+
+        cleanCache("*dish_*");
+
+        return Result.success();
+
+    }
+
 
     @GetMapping("/list")
     @ApiOperation("Get dish by categoryId")
     public Result<List<Dish>> list(Long categoryId){
         List<Dish> list= dishService.list(categoryId);
         return Result.success(list);
+    }
+
+    private void cleanCache(String pattern){
+        Set keys = redisTemplate.keys(pattern);
+        redisTemplate.delete(keys);
     }
 }
